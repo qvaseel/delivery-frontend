@@ -5,6 +5,7 @@ import { Button } from "../shared/ui/Button";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { authActions } from "../features/auth/authSlice";
 import { baseApi } from "../app/baseApi";
+import { NotificationsBell } from "../features/notifications/ui/NotificationsBell";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -93,6 +94,8 @@ export function Navbar() {
 
           {token ? (
             <>
+              {isCustomer ? <NotificationsBell /> : null}
+
               {isCustomer ? (
                 <Button
                   variant="ghost"
