@@ -20,7 +20,7 @@ export type OrderItemDto = {
 
 export type OrderDto = {
   id: number;
-  status: OrderStatus;
+  status: Exclude<OrderStatus, "all">;
   address: string;
   customer: CustomerDto;
   employee: EmployeeDto;
@@ -28,6 +28,16 @@ export type OrderDto = {
   imageUrl?: string | null | undefined;
   items: OrderItemDto[];
   createdAtUtc: string;
+};
+
+export type OrderStatusHistoryDto = {
+  id: number;
+  previousStatus: Exclude<OrderStatus, "all"> | null;
+  newStatus: Exclude<OrderStatus, "all">;
+  changedByUserId: number | null;
+  changedByName: string;
+  changedByRole: string;
+  changedAtUtc: string;
 };
 
 export type CreateOrderDto = {

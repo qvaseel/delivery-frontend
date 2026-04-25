@@ -1,17 +1,13 @@
 import { Badge } from "../../../shared/ui/Badge";
+import { getOrderStatusLabel } from "../lib/orders.utils";
 import type { OrderStatus } from "../types";
 
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  const label =
-    status === 1
-      ? "Создан"
-      : status === 2
-        ? "Назначен"
-        : status === 3
-          ? "В доставке"
-          : status === 4
-            ? "Доставлен"
-            : "Отменён";
+export function OrderStatusBadge({
+  status,
+}: {
+  status: Exclude<OrderStatus, "all">;
+}) {
+  const label = getOrderStatusLabel(status);
 
   const cls =
     status === 4

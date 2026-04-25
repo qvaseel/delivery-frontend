@@ -4,6 +4,7 @@ import { Card } from "../../../shared/ui/Card";
 import { canMarkDelivered, canStartDelivery } from "../lib/courierOrders.utils";
 import type { OrderDto } from "../types";
 import { CourierOrderItems } from "./CourierOrderItems";
+import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 
 type CourierOrderCardProps = {
@@ -61,6 +62,7 @@ export function CourierOrderCard({
       </div>
 
       <CourierOrderItems orderId={order.id} items={order.items} />
+      <OrderHistoryPanel orderId={order.id} />
     </Card>
   );
 }

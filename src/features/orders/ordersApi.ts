@@ -4,6 +4,7 @@ import type {
   CreateOrderDto,
   OrderDto,
   OrderListQuery,
+  OrderStatusHistoryDto,
   OrderStatus,
 } from "./types";
 
@@ -13,15 +14,22 @@ export const ordersApi = baseApi.injectEndpoints({
       query: () => ({ url: "/orders/my" }),
       providesTags: ["Orders"],
     }),
+    orderHistory: builder.query<OrderStatusHistoryDto[], number>({
+      query: (id) => ({ url: `/orders/${id}/history` }),
+      providesTags: (_result, _error, id) => [{ type: "OrderHistory", id }],
+    }),
 
     createOrder: builder.mutation<OrderDto, CreateOrderDto>({
       query: (body) => ({ url: "/orders", method: "POST", body }),
-      invalidatesTags: ["Orders"],
+      invalidatesTags: ["Orders", "OrderHistory"],
     }),
 
     cancelOrder: builder.mutation<OrderDto, number>({
       query: (id) => ({ url: `/orders/${id}/cancel`, method: "POST" }),
-      invalidatesTags: ["Orders"],
+      invalidatesTags: (_result, _error, id) => [
+        "Orders",
+        { type: "OrderHistory", id },
+      ],
     }),
 
     assignedToMe: builder.query<
@@ -44,7 +52,10 @@ export const ordersApi = baseApi.injectEndpoints({
         method: "POST",
         params: { status },
       }),
-      invalidatesTags: ["Orders"],
+      invalidatesTags: (_result, _error, { id }) => [
+        "Orders",
+        { type: "OrderHistory", id },
+      ],
     }),
     allOrders: builder.query<PagedResult<OrderDto>, OrderListQuery>({
       query: (q) => ({
@@ -76,7 +87,10 @@ export const ordersApi = baseApi.injectEndpoints({
         url: `/orders/${orderId}/assign/${employeeId}`,
         method: "POST",
       }),
-      invalidatesTags: ["Orders"],
+      invalidatesTags: (_result, _error, { orderId }) => [
+        "Orders",
+        { type: "OrderHistory", id: orderId },
+      ],
     }),
 
     setStatusManager: builder.mutation<
@@ -88,13 +102,17 @@ export const ordersApi = baseApi.injectEndpoints({
         method: "POST",
         params: { status },
       }),
-      invalidatesTags: ["Orders"],
+      invalidatesTags: (_result, _error, { orderId }) => [
+        "Orders",
+        { type: "OrderHistory", id: orderId },
+      ],
     }),
   }),
 });
 
 export const {
   useMyOrdersQuery,
+  useOrderHistoryQuery,
   useCreateOrderMutation,
   useCancelOrderMutation,
   useAssignedToMeQuery,

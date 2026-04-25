@@ -23,3 +23,12 @@ export const canCancelOrder = (status: number) => {
     status !== OrderStatusEnum.Canceled
   );
 };
+
+export const getOrderStatusLabel = (status: Exclude<OrderStatus, "all">) => {
+  if (status === 1) return "Создан";
+  if (status === 2) return "Назначен";
+  if (status === 3) return "В доставке";
+  if (status === 4) return "Доставлен";
+
+  return "Отменен";
+};

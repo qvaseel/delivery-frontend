@@ -3,6 +3,7 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { canCancelOrder } from "../lib/orders.utils";
 import type { OrderDto } from "../types";
+import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { MyOrderItems } from "./MyOrderItems";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 
@@ -56,6 +57,7 @@ export function MyOrderCard({
       </div>
 
       <MyOrderItems orderId={order.id} items={order.items} />
+      <OrderHistoryPanel orderId={order.id} />
     </Card>
   );
 }
