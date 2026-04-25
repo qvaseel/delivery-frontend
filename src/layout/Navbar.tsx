@@ -1,15 +1,25 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ShoppingCart, LogOut } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { LogOut, Menu, ShoppingCart, X } from "lucide-react";
 import { ThemeToggle } from "../features/theme/ThemeToggle";
 import { Button } from "../shared/ui/Button";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { authActions } from "../features/auth/authSlice";
 import { baseApi } from "../app/baseApi";
 import { NotificationsBell } from "../features/notifications/ui/NotificationsBell";
+import { cn } from "../shared/lib/cn";
+
+type NavItem = {
+  to: string;
+  label: string;
+};
 
 export function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const count = useAppSelector((s) =>
     s.cart.items.reduce((sum, i) => sum + i.quantity, 0),
   );
@@ -20,120 +30,220 @@ export function Navbar() {
   const roles = me?.roles ?? [];
   const isCustomer = roles.includes("Customer");
   const isCourier = roles.includes("Courier");
-  const isManager = roles.includes("Manager");
   const isAdmin = roles.includes("Admin");
+
+  const navItems = useMemo<NavItem[]>(() => {
+    if (isCustomer) {
+      return [
+        { to: "/products", label: "Товары" },
+        { to: "/orders", label: "Заказы" },
+        { to: "/cart", label: "Корзина" },
+      ];
+    }
+
+    if (isCourier) {
+      return [{ to: "/courier/orders", label: "Мои доставки" }];
+    }
+
+    const adminItems: NavItem[] = [
+      { to: "/admin/orders", label: "Заказы" },
+      { to: "/admin/products", label: "Товары" },
+      { to: "/admin/categories", label: "Категории" },
+    ];
+
+    if (isAdmin) {
+      adminItems.push({ to: "/admin/employees", label: "Сотрудники" });
+    }
+
+    return adminItems;
+  }, [isAdmin, isCourier, isCustomer]);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive
       ? "font-semibold text-custom-text"
       : "text-custom-text-muted transition-colors hover:text-custom-text";
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileOpen]);
+
+  const handleLogout = () => {
+    dispatch(authActions.logout());
+    dispatch(baseApi.util.resetApiState());
+    navigate("/login");
+  };
+
   return (
-    <div className="sticky top-0 z-40 border-b border-custom-border bg-custom-bg/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link
-          to="/"
-          className="text-lg font-bold tracking-tight text-custom-text transition-opacity hover:opacity-90"
-        >
-          Delivery
-        </Link>
-
-        {token && meLoaded ? (
-          <nav className="hidden gap-6 md:flex">
-            {isCustomer ? (
-              <>
-                <NavLink to="/products" className={linkClass}>
-                  Товары
-                </NavLink>
-                <NavLink to="/orders" className={linkClass}>
-                  Заказы
-                </NavLink>
-              </>
+    <>
+      <div className="sticky top-0 z-40 border-b border-custom-border bg-custom-bg/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3">
+            {token && meLoaded ? (
+              <Button
+                variant="ghost"
+                onClick={() => setMobileOpen(true)}
+                className="px-3 md:hidden"
+                aria-label="Открыть меню"
+              >
+                <Menu size={18} />
+              </Button>
             ) : null}
 
-            {isCourier ? (
-              <NavLink to="/courier/orders" className={linkClass}>
-                Курьер
-              </NavLink>
-            ) : null}
-
-            {isManager || isAdmin ? (
-              <>
-                <NavLink to="/admin/orders" className={linkClass}>
-                  Управление
-                </NavLink>
-                <NavLink to="/admin/products" className={linkClass}>
-                  Товары (админ)
-                </NavLink>
-                <NavLink to="/admin/categories" className={linkClass}>
-                  Категории
-                </NavLink>
-              </>
-            ) : null}
-
-            {isAdmin ? (
-              <NavLink to="/admin/employees" className={linkClass}>
-                Сотрудники
-              </NavLink>
-            ) : null}
-
-            {isCustomer ? (
-              <NavLink to="/cart" className={linkClass}>
-                Корзина
-              </NavLink>
-            ) : null}
-          </nav>
-        ) : token ? (
-          <div className="hidden md:block text-sm text-custom-text-muted">
-            Загрузка...
+            <Link
+              to="/"
+              className="text-lg font-bold tracking-tight text-custom-text transition-opacity hover:opacity-90"
+            >
+              Delivery
+            </Link>
           </div>
-        ) : null}
 
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
+          {token && meLoaded ? (
+            <nav className="hidden gap-6 md:flex">
+              {navItems.map((item) => (
+                <NavLink key={item.to} to={item.to} className={linkClass}>
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          ) : token ? (
+            <div className="hidden text-sm text-custom-text-muted md:block">
+              Загрузка профиля...
+            </div>
+          ) : null}
 
-          {token ? (
-            <>
-              {isCustomer ? <NotificationsBell /> : null}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
 
-              {isCustomer ? (
+            {token ? (
+              <>
+                {isCustomer ? <NotificationsBell /> : null}
+
+                {isCustomer ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate("/cart")}
+                    className="relative px-3"
+                    title="Корзина"
+                  >
+                    <ShoppingCart size={18} />
+                    {count > 0 ? (
+                      <span className="absolute -right-1 -top-1 rounded-full bg-custom-primary px-2 py-0.5 text-xs font-semibold text-custom-primary-foreground shadow-sm">
+                        {count}
+                      </span>
+                    ) : null}
+                  </Button>
+                ) : null}
+
                 <Button
                   variant="ghost"
-                  onClick={() => navigate("/cart")}
-                  className="relative px-3"
+                  onClick={handleLogout}
+                  className="px-3"
+                  title="Выйти"
                 >
-                  <ShoppingCart size={18} />
-                  {count > 0 ? (
-                    <span className="absolute -right-1 -top-1 rounded-full bg-custom-primary px-2 py-0.5 text-xs font-semibold text-custom-primary-foreground shadow-sm">
-                      {count}
-                    </span>
-                  ) : null}
+                  <LogOut size={18} />
                 </Button>
-              ) : null}
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => navigate("/login")}>
+                  Вход
+                </Button>
+                <Button onClick={() => navigate("/register")}>Регистрация</Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-custom-overlay/55 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Закрыть меню"
+          />
+
+          <div className="absolute inset-y-0 left-0 flex w-[min(22rem,88vw)] flex-col border-r border-custom-border bg-custom-surface-elevated px-4 py-4 shadow-[0_20px_60px_rgba(2,6,23,0.24)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-custom-text">Навигация</div>
+                <div className="mt-1 text-xs text-custom-text-muted">
+                  {me?.email ?? "Аккаунт"}
+                </div>
+              </div>
 
               <Button
                 variant="ghost"
-                onClick={() => {
-                  dispatch(authActions.logout());
-                  dispatch(baseApi.util.resetApiState());
-                  navigate("/login");
-                }}
+                onClick={() => setMobileOpen(false)}
                 className="px-3"
-                title="Выйти"
+                aria-label="Закрыть меню"
               >
-                <LogOut size={18} />
+                <X size={18} />
               </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" onClick={() => navigate("/login")}>
-                Вход
-              </Button>
-              <Button onClick={() => navigate("/register")}>Регистрация</Button>
-            </>
-          )}
+            </div>
+
+            <div className="mt-5 space-y-2">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.to;
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center justify-between rounded-2xl border px-4 py-3 text-sm transition-colors",
+                      isActive
+                        ? "border-custom-primary/25 bg-custom-primary/10 font-semibold text-custom-text"
+                        : "border-custom-border bg-custom-surface text-custom-text-muted hover:bg-custom-surface-soft hover:text-custom-text",
+                    )}
+                  >
+                    <span>{item.label}</span>
+                    {item.to === "/cart" && count > 0 ? (
+                      <span className="rounded-full bg-custom-primary px-2 py-0.5 text-xs font-semibold text-custom-primary-foreground">
+                        {count}
+                      </span>
+                    ) : null}
+                  </NavLink>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-custom-border bg-custom-surface-soft px-4 py-4">
+              <div className="text-sm font-semibold text-custom-text">Быстрые действия</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {isCustomer ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigate("/cart");
+                    }}
+                  >
+                    Корзина
+                  </Button>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  Выйти
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      ) : null}
+    </>
   );
 }

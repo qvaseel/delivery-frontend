@@ -207,6 +207,8 @@ export function AdminProductsPage() {
           <Pagination
             page={data.page}
             totalPages={data.totalPages}
+            totalCount={data.totalCount}
+            pageSize={data.pageSize}
             onPageChange={setPage}
           />
         </>

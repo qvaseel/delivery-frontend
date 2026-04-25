@@ -1,5 +1,5 @@
 import { AsyncPaginate } from "react-select-async-paginate";
-import type { GroupBase } from "react-select";
+import type { GroupBase, OptionsOrGroups } from "react-select";
 import {
   classNamesSelect,
   type SelectOption,
@@ -27,7 +27,7 @@ export function CategoryAsyncSelect({
 
   const loadOptions = async (
     search: string,
-    loadedOptions: SelectOption[],
+    _loadedOptions: OptionsOrGroups<SelectOption, GroupBase<SelectOption>>,
     additional?: Additional,
   ) => {
     const page = additional?.page ?? 1;

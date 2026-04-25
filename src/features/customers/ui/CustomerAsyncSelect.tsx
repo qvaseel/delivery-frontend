@@ -1,5 +1,5 @@
 import { AsyncPaginate } from "react-select-async-paginate";
-import type { GroupBase } from "react-select";
+import type { GroupBase, OptionsOrGroups } from "react-select";
 import type { CustomerDto } from "../types";
 import { useLazyCustomersQuery } from "../customersApi";
 import {
@@ -30,7 +30,7 @@ export function CustomerAsyncSelect({
 
   const loadOptions = async (
     search: string,
-    _loadedOptions: SelectOption[],
+    _loadedOptions: OptionsOrGroups<SelectOption, GroupBase<SelectOption>>,
     additional?: LoadCustomersAdditional,
   ) => {
     const page = additional?.page ?? 1;
