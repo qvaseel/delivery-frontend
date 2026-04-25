@@ -3,18 +3,23 @@ import { Button } from "../../../shared/ui/Button";
 import { Card } from "../../../shared/ui/Card";
 import { canCancelOrder } from "../lib/orders.utils";
 import type { OrderDto } from "../types";
+import { OrderChat } from "./OrderChat";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { MyOrderItems } from "./MyOrderItems";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 
 type MyOrderCardProps = {
   order: OrderDto;
+  hasUnreadChat?: boolean;
+  unreadChatCount?: number;
   cancelDisabled: boolean;
   onCancel: (orderId: number, status: number) => void;
 };
 
 export function MyOrderCard({
   order,
+  hasUnreadChat = false,
+  unreadChatCount = 0,
   cancelDisabled,
   onCancel,
 }: MyOrderCardProps) {
@@ -43,8 +48,14 @@ export function MyOrderCard({
           </div>
         </div>
 
-        {canCancel ? (
-          <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <OrderChat
+            orderId={order.id}
+            hasUnread={hasUnreadChat}
+            unreadCount={unreadChatCount}
+          />
+
+          {canCancel ? (
             <Button
               variant="ghost"
               disabled={cancelDisabled}
@@ -52,8 +63,8 @@ export function MyOrderCard({
             >
               Отменить
             </Button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
       <MyOrderItems orderId={order.id} items={order.items} />

@@ -2,11 +2,33 @@ import { baseApi } from "../../app/baseApi";
 import type { PagedResult } from "../products/types";
 import type {
   CreateOrderDto,
+  OrderChatMessageDto,
+  OrderChatUnread,
+  OrderChatUnreadCount,
   OrderDto,
   OrderListQuery,
   OrderStatusHistoryDto,
   OrderStatus,
 } from "./types";
+
+function normalizeOrderChatUnreadCount(
+  response: Partial<OrderChatUnreadCount> | null | undefined,
+): OrderChatUnreadCount {
+  return {
+    unreadOrders: response?.unreadOrders ?? 0,
+    unreadMessages: response?.unreadMessages ?? 0,
+  };
+}
+
+function normalizeOrderChatUnreadList(
+  response: Array<Partial<OrderChatUnread>> | null | undefined,
+): OrderChatUnread[] {
+  return (response ?? []).map((item) => ({
+    orderId: item.orderId ?? 0,
+    hasUnread: Boolean(item.hasUnread ?? (item.unreadCount ?? 0) > 0),
+    unreadCount: item.unreadCount ?? 0,
+  }));
+}
 
 export const ordersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -17,6 +39,28 @@ export const ordersApi = baseApi.injectEndpoints({
     orderHistory: builder.query<OrderStatusHistoryDto[], number>({
       query: (id) => ({ url: `/orders/${id}/history` }),
       providesTags: (_result, _error, id) => [{ type: "OrderHistory", id }],
+    }),
+    orderChatUnreadCount: builder.query<OrderChatUnreadCount, void>({
+      query: () => ({ url: "/orders/chat/unread-count" }),
+      providesTags: ["OrderChatUnread"],
+      transformResponse: normalizeOrderChatUnreadCount,
+    }),
+    unreadOrderChats: builder.query<OrderChatUnread[], void>({
+      query: () => ({ url: "/orders/chat/unread" }),
+      providesTags: ["OrderChatUnread"],
+      transformResponse: normalizeOrderChatUnreadList,
+    }),
+    orderChatMessages: builder.query<
+      OrderChatMessageDto[],
+      { orderId: number; take?: number }
+    >({
+      query: ({ orderId, take = 50 }) => ({
+        url: `/orders/${orderId}/chat/messages`,
+        params: { take },
+      }),
+      providesTags: (_result, _error, { orderId }) => [
+        { type: "OrderChat", id: orderId },
+      ],
     }),
 
     createOrder: builder.mutation<OrderDto, CreateOrderDto>({
@@ -29,6 +73,22 @@ export const ordersApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, id) => [
         "Orders",
         { type: "OrderHistory", id },
+        { type: "OrderChat", id },
+        "OrderChatUnread",
+      ],
+    }),
+    sendOrderChatMessage: builder.mutation<
+      OrderChatMessageDto,
+      { orderId: number; message: string }
+    >({
+      query: ({ orderId, message }) => ({
+        url: `/orders/${orderId}/chat/messages`,
+        method: "POST",
+        body: { message },
+      }),
+      invalidatesTags: (_result, _error, { orderId }) => [
+        { type: "OrderChat", id: orderId },
+        "OrderChatUnread",
       ],
     }),
 
@@ -55,6 +115,8 @@ export const ordersApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, { id }) => [
         "Orders",
         { type: "OrderHistory", id },
+        { type: "OrderChat", id },
+        "OrderChatUnread",
       ],
     }),
     allOrders: builder.query<PagedResult<OrderDto>, OrderListQuery>({
@@ -90,6 +152,8 @@ export const ordersApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, { orderId }) => [
         "Orders",
         { type: "OrderHistory", id: orderId },
+        { type: "OrderChat", id: orderId },
+        "OrderChatUnread",
       ],
     }),
 
@@ -105,6 +169,8 @@ export const ordersApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, { orderId }) => [
         "Orders",
         { type: "OrderHistory", id: orderId },
+        { type: "OrderChat", id: orderId },
+        "OrderChatUnread",
       ],
     }),
   }),
@@ -113,8 +179,12 @@ export const ordersApi = baseApi.injectEndpoints({
 export const {
   useMyOrdersQuery,
   useOrderHistoryQuery,
+  useOrderChatUnreadCountQuery,
+  useUnreadOrderChatsQuery,
+  useOrderChatMessagesQuery,
   useCreateOrderMutation,
   useCancelOrderMutation,
+  useSendOrderChatMessageMutation,
   useAssignedToMeQuery,
   useSetStatusCourierMutation,
   useAllOrdersQuery,

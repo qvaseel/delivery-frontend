@@ -40,6 +40,27 @@ export type OrderStatusHistoryDto = {
   changedAtUtc: string;
 };
 
+export type OrderChatUnreadCount = {
+  unreadOrders: number;
+  unreadMessages: number;
+};
+
+export type OrderChatUnread = {
+  orderId: number;
+  hasUnread: boolean;
+  unreadCount: number;
+};
+
+export type OrderChatMessageDto = {
+  id: number;
+  orderId: number;
+  senderUserId: number;
+  senderName: string;
+  senderRole: string;
+  message: string;
+  createdAtUtc: string;
+};
+
 export type CreateOrderDto = {
   address: string;
   items: { productId: number; quantity: number }[];

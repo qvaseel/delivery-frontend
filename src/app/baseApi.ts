@@ -1,4 +1,7 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import {
+  createApi,
+  fetchBaseQuery,
+} from "@reduxjs/toolkit/query/react";
 import { API_URL } from "../shared/lib/constants";
 import type { RootState } from "./store";
 import toast from "react-hot-toast";
@@ -20,7 +23,11 @@ const baseQueryWithAuthHandling: typeof rawBaseQuery = async (
   api,
   extraOptions,
 ) => {
-  const result: any = await rawBaseQuery(args, api, extraOptions);
+  const result: Awaited<ReturnType<typeof rawBaseQuery>> = await rawBaseQuery(
+    args,
+    api,
+    extraOptions,
+  );
   const status = result?.error?.status;
 
   if (status === 401) {
@@ -56,6 +63,11 @@ export const baseApi = createApi({
     "Customers",
     "Notifications",
     "OrderHistory",
+    "OrderChat",
+    "OrderChatUnread",
+    "HelpdeskTickets",
+    "HelpdeskMessages",
+    "HelpdeskUnread",
   ],
   endpoints: () => ({}),
 });

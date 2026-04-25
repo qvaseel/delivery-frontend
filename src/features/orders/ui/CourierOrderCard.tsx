@@ -4,11 +4,14 @@ import { Card } from "../../../shared/ui/Card";
 import { canMarkDelivered, canStartDelivery } from "../lib/courierOrders.utils";
 import type { OrderDto } from "../types";
 import { CourierOrderItems } from "./CourierOrderItems";
+import { OrderChat } from "./OrderChat";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 
 type CourierOrderCardProps = {
   order: OrderDto;
+  hasUnreadChat?: boolean;
+  unreadChatCount?: number;
   disabled: boolean;
   onStartDelivery: (orderId: number) => void;
   onMarkDelivered: (orderId: number) => void;
@@ -16,6 +19,8 @@ type CourierOrderCardProps = {
 
 export function CourierOrderCard({
   order,
+  hasUnreadChat = false,
+  unreadChatCount = 0,
   disabled,
   onStartDelivery,
   onMarkDelivered,
@@ -44,6 +49,12 @@ export function CourierOrderCard({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <OrderChat
+            orderId={order.id}
+            hasUnread={hasUnreadChat}
+            unreadCount={unreadChatCount}
+          />
+
           <Button
             disabled={disabled || !canStartDelivery(order.status)}
             onClick={() => onStartDelivery(order.id)}

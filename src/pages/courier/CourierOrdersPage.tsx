@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Card } from "../../shared/ui/Card";
 import { Button } from "../../shared/ui/Button";
+import { Card } from "../../shared/ui/Card";
 import { Pagination } from "../../shared/ui/Pagination";
 import {
   useAssignedToMeQuery,
   useSetStatusCourierMutation,
+  useUnreadOrderChatsQuery,
 } from "../../features/orders/ordersApi";
 import { COURIER_ORDER_STATUS } from "../../features/orders/lib/courierOrders.utils";
+import { useOrderChatUnreadRealtime } from "../../features/orders/lib/useOrderChatUnreadRealtime";
 import { CourierOrderCard } from "../../features/orders/ui/CourierOrderCard";
 
 export function CourierOrdersPage() {
@@ -20,8 +22,16 @@ export function CourierOrdersPage() {
     page,
     pageSize,
   });
+  const { data: unreadChats = [] } = useUnreadOrderChatsQuery();
 
   const [setStatus] = useSetStatusCourierMutation();
+
+  useOrderChatUnreadRealtime();
+
+  const unreadMap = useMemo(
+    () => new Map(unreadChats.map((item) => [item.orderId, item])),
+    [unreadChats],
+  );
 
   const updateStatus = async (
     orderId: number,
@@ -40,18 +50,10 @@ export function CourierOrdersPage() {
   };
 
   const startDelivery = (orderId: number) =>
-    updateStatus(
-      orderId,
-      COURIER_ORDER_STATUS.delivering,
-      `Заказ #${orderId}: в доставке`,
-    );
+    updateStatus(orderId, COURIER_ORDER_STATUS.delivering, `Заказ #${orderId}: в доставке`);
 
   const markDelivered = (orderId: number) =>
-    updateStatus(
-      orderId,
-      COURIER_ORDER_STATUS.delivered,
-      `Заказ #${orderId}: доставлен`,
-    );
+    updateStatus(orderId, COURIER_ORDER_STATUS.delivered, `Заказ #${orderId}: доставлен`);
 
   return (
     <div className="space-y-6">
@@ -61,8 +63,7 @@ export function CourierOrdersPage() {
             Курьер: мои заказы
           </h1>
           <p className="mt-1 text-sm text-custom-text-muted">
-            Здесь только заказы, назначенные тебе. Можно менять статус: Assigned
-            → Delivering → Delivered.
+            Здесь только заказы, назначенные вам. Можно менять статус и отвечать в чате по заказу.
           </p>
         </div>
 
@@ -80,7 +81,7 @@ export function CourierOrdersPage() {
       {isError ? (
         <Card className="border-custom-danger/30 bg-custom-danger-soft p-6">
           <div className="text-sm font-medium text-custom-danger">
-            Ошибка загрузки. Проверь роль Courier и JWT.
+            Ошибка загрузки. Проверьте роль курьера и авторизацию.
           </div>
         </Card>
       ) : null}
@@ -96,15 +97,21 @@ export function CourierOrdersPage() {
       {data && data.items.length > 0 ? (
         <>
           <div className="space-y-4">
-            {data.items.map((order) => (
-              <CourierOrderCard
-                key={order.id}
-                order={order}
-                disabled={pendingOrderId === order.id}
-                onStartDelivery={startDelivery}
-                onMarkDelivered={markDelivered}
-              />
-            ))}
+            {data.items.map((order) => {
+              const unreadChat = unreadMap.get(order.id);
+
+              return (
+                <CourierOrderCard
+                  key={order.id}
+                  order={order}
+                  hasUnreadChat={unreadChat?.hasUnread ?? false}
+                  unreadChatCount={unreadChat?.unreadCount ?? 0}
+                  disabled={pendingOrderId === order.id}
+                  onStartDelivery={startDelivery}
+                  onMarkDelivered={markDelivered}
+                />
+              );
+            })}
           </div>
 
           <Pagination

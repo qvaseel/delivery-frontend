@@ -1,18 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  LifeBuoy,
+  LogOut,
+  Menu,
+  MessagesSquare,
+  ShoppingCart,
+  X,
+} from "lucide-react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Menu, ShoppingCart, X } from "lucide-react";
-import { ThemeToggle } from "../features/theme/ThemeToggle";
-import { Button } from "../shared/ui/Button";
-import { useAppDispatch, useAppSelector } from "../app/hooks";
-import { authActions } from "../features/auth/authSlice";
 import { baseApi } from "../app/baseApi";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { useHelpdeskUnreadCountQuery } from "../features/helpdesk/helpdeskApi";
+import { useHelpdeskUnreadRealtime } from "../features/helpdesk/lib/useHelpdeskUnreadRealtime";
+import { useOrderChatUnreadCountQuery } from "../features/orders/ordersApi";
+import { useOrderChatUnreadRealtime } from "../features/orders/lib/useOrderChatUnreadRealtime";
 import { NotificationsBell } from "../features/notifications/ui/NotificationsBell";
+import { ThemeToggle } from "../features/theme/ThemeToggle";
+import { authActions } from "../features/auth/authSlice";
 import { cn } from "../shared/lib/cn";
+import { Button } from "../shared/ui/Button";
 
 type NavItem = {
   to: string;
   label: string;
 };
+
+const POLLING_INTERVAL_MS = 5000;
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -20,7 +33,7 @@ export function Navbar() {
   const dispatch = useAppDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const count = useAppSelector((s) =>
+  const cartCount = useAppSelector((s) =>
     s.cart.items.reduce((sum, i) => sum + i.quantity, 0),
   );
   const token = useAppSelector((s) => s.auth.accessToken);
@@ -30,13 +43,17 @@ export function Navbar() {
   const roles = me?.roles ?? [];
   const isCustomer = roles.includes("Customer");
   const isCourier = roles.includes("Courier");
+  const isManager = roles.includes("Manager");
   const isAdmin = roles.includes("Admin");
+  const canUseHelpdesk = isCustomer || isManager || isAdmin;
+  const canUseOrderChat = isCustomer || isCourier;
 
   const navItems = useMemo<NavItem[]>(() => {
     if (isCustomer) {
       return [
         { to: "/products", label: "Товары" },
         { to: "/orders", label: "Заказы" },
+        { to: "/helpdesk", label: "Поддержка" },
         { to: "/cart", label: "Корзина" },
       ];
     }
@@ -47,6 +64,7 @@ export function Navbar() {
 
     const adminItems: NavItem[] = [
       { to: "/admin/orders", label: "Заказы" },
+      { to: "/admin/helpdesk", label: "Поддержка" },
       { to: "/admin/products", label: "Товары" },
       { to: "/admin/categories", label: "Категории" },
     ];
@@ -57,6 +75,37 @@ export function Navbar() {
 
     return adminItems;
   }, [isAdmin, isCourier, isCustomer]);
+
+  const { data: helpdeskUnread = { unreadTickets: 0, unreadMessages: 0 } } =
+    useHelpdeskUnreadCountQuery(undefined, {
+      skip: !token || !canUseHelpdesk,
+      pollingInterval: POLLING_INTERVAL_MS,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    });
+  const { data: orderChatUnread = { unreadOrders: 0, unreadMessages: 0 } } =
+    useOrderChatUnreadCountQuery(undefined, {
+      skip: !token || !canUseOrderChat,
+      pollingInterval: POLLING_INTERVAL_MS,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    });
+
+  useHelpdeskUnreadRealtime({
+    enabled: Boolean(token && canUseHelpdesk),
+  });
+  useOrderChatUnreadRealtime({
+    enabled: Boolean(token && canUseOrderChat),
+  });
+
+  const helpdeskBadgeLabel =
+    helpdeskUnread.unreadTickets > 99
+      ? "99+"
+      : String(helpdeskUnread.unreadTickets);
+  const orderChatBadgeLabel =
+    orderChatUnread.unreadOrders > 99
+      ? "99+"
+      : String(orderChatUnread.unreadOrders);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive
@@ -79,6 +128,9 @@ export function Navbar() {
     dispatch(baseApi.util.resetApiState());
     navigate("/login");
   };
+
+  const supportPath = isCustomer ? "/helpdesk" : "/admin/helpdesk";
+  const orderChatPath = isCustomer ? "/orders" : "/courier/orders";
 
   return (
     <>
@@ -125,6 +177,22 @@ export function Navbar() {
               <>
                 {isCustomer ? <NotificationsBell /> : null}
 
+                {canUseOrderChat ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate(orderChatPath)}
+                    className="relative px-3"
+                    title="Чаты заказов"
+                  >
+                    <MessagesSquare size={18} />
+                    {orderChatUnread.unreadOrders > 0 ? (
+                      <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-custom-primary px-1.5 py-0.5 text-center text-[11px] font-semibold leading-none text-custom-primary-foreground shadow-sm">
+                        {orderChatBadgeLabel}
+                      </span>
+                    ) : null}
+                  </Button>
+                ) : null}
+
                 {isCustomer ? (
                   <Button
                     variant="ghost"
@@ -133,9 +201,25 @@ export function Navbar() {
                     title="Корзина"
                   >
                     <ShoppingCart size={18} />
-                    {count > 0 ? (
-                      <span className="absolute -right-1 -top-1 rounded-full bg-custom-primary px-2 py-0.5 text-xs font-semibold text-custom-primary-foreground shadow-sm">
-                        {count}
+                    {cartCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-custom-primary px-1.5 py-0.5 text-center text-[11px] font-semibold leading-none text-custom-primary-foreground shadow-sm">
+                        {cartCount}
+                      </span>
+                    ) : null}
+                  </Button>
+                ) : null}
+
+                {canUseHelpdesk ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate(supportPath)}
+                    className="relative px-3"
+                    title="Поддержка"
+                  >
+                    <LifeBuoy size={18} />
+                    {helpdeskUnread.unreadTickets > 0 ? (
+                      <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-custom-primary px-1.5 py-0.5 text-center text-[11px] font-semibold leading-none text-custom-primary-foreground shadow-sm">
+                        {helpdeskBadgeLabel}
                       </span>
                     ) : null}
                   </Button>
@@ -155,7 +239,9 @@ export function Navbar() {
                 <Button variant="ghost" onClick={() => navigate("/login")}>
                   Вход
                 </Button>
-                <Button onClick={() => navigate("/register")}>Регистрация</Button>
+                <Button onClick={() => navigate("/register")}>
+                  Регистрация
+                </Button>
               </>
             )}
           </div>
@@ -174,7 +260,9 @@ export function Navbar() {
           <div className="absolute inset-y-0 left-0 flex w-[min(22rem,88vw)] flex-col border-r border-custom-border bg-custom-surface-elevated px-4 py-4 shadow-[0_20px_60px_rgba(2,6,23,0.24)]">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-semibold text-custom-text">Навигация</div>
+                <div className="text-sm font-semibold text-custom-text">
+                  Навигация
+                </div>
                 <div className="mt-1 text-xs text-custom-text-muted">
                   {me?.email ?? "Аккаунт"}
                 </div>
@@ -193,6 +281,11 @@ export function Navbar() {
             <div className="mt-5 space-y-2">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.to;
+                const isCartItem = item.to === "/cart";
+                const isHelpdeskItem =
+                  item.to === "/helpdesk" || item.to === "/admin/helpdesk";
+                const isOrderItem =
+                  item.to === "/orders" || item.to === "/courier/orders";
 
                 return (
                   <NavLink
@@ -207,9 +300,19 @@ export function Navbar() {
                     )}
                   >
                     <span>{item.label}</span>
-                    {item.to === "/cart" && count > 0 ? (
+                    {isCartItem && cartCount > 0 ? (
                       <span className="rounded-full bg-custom-primary px-2 py-0.5 text-xs font-semibold text-custom-primary-foreground">
-                        {count}
+                        {cartCount}
+                      </span>
+                    ) : null}
+                    {isHelpdeskItem && helpdeskUnread.unreadTickets > 0 ? (
+                      <span className="rounded-full bg-custom-primary px-2 py-0.5 text-xs font-semibold text-custom-primary-foreground">
+                        {helpdeskBadgeLabel}
+                      </span>
+                    ) : null}
+                    {isOrderItem && orderChatUnread.unreadOrders > 0 ? (
+                      <span className="rounded-full bg-custom-primary px-2 py-0.5 text-xs font-semibold text-custom-primary-foreground">
+                        {orderChatBadgeLabel}
                       </span>
                     ) : null}
                   </NavLink>
@@ -218,12 +321,15 @@ export function Navbar() {
             </div>
 
             <div className="mt-6 rounded-2xl border border-custom-border bg-custom-surface-soft px-4 py-4">
-              <div className="text-sm font-semibold text-custom-text">Быстрые действия</div>
+              <div className="text-sm font-semibold text-custom-text">
+                Быстрые действия
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {isCustomer ? (
                   <Button
                     variant="ghost"
                     onClick={() => {
+                      setMobileOpen(false);
                       navigate("/cart");
                     }}
                   >
