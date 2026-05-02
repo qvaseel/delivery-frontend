@@ -136,6 +136,12 @@ body {
   color: var(--text);
 }
 
+.order-route-map {
+  height: 260px;
+  width: 100%;
+  overflow: hidden;
+}
+
 #root {
   background-color: var(--background);
   color: var(--text);

@@ -7,6 +7,7 @@ import { CourierOrderItems } from "./CourierOrderItems";
 import { OrderChat } from "./OrderChat";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { OrderStatusBadge } from "./OrderStatusBadge";
+import { OrderRouteMap } from "../../../shared/ui/OrderRouteMap";
 
 type CourierOrderCardProps = {
   order: OrderDto;
@@ -46,6 +47,8 @@ export function CourierOrderCard({
               {formatPrice(order.totalPrice)}
             </span>
           </div>
+
+          <OrderRouteMap address={order.address} mode="courier" />
         </div>
 
         <div className="flex flex-wrap gap-2">

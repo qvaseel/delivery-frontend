@@ -7,6 +7,7 @@ import { OrderChat } from "./OrderChat";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { MyOrderItems } from "./MyOrderItems";
 import { OrderStatusBadge } from "./OrderStatusBadge";
+import { OrderRouteMap } from "../../../shared/ui/OrderRouteMap";
 
 type MyOrderCardProps = {
   order: OrderDto;
@@ -46,6 +47,8 @@ export function MyOrderCard({
               {formatPrice(order.totalPrice)}
             </span>
           </div>
+
+          <OrderRouteMap address={order.address} />
         </div>
 
         <div className="flex flex-wrap gap-2">
