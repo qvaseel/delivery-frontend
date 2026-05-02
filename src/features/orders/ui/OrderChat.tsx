@@ -3,6 +3,7 @@ import { MessagesSquare } from "lucide-react";
 import toast from "react-hot-toast";
 import { baseApi } from "../../../app/baseApi";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { normalizeAttachments } from "../../../shared/lib/attachments";
 import { chatHubService } from "../../../shared/lib/chatHub";
 import { Button } from "../../../shared/ui/Button";
 import { ChatComposer } from "../../../shared/ui/ChatComposer";
@@ -35,6 +36,17 @@ function mergeMessages(
     (a, b) =>
       new Date(a.createdAtUtc).getTime() - new Date(b.createdAtUtc).getTime(),
   );
+}
+
+function normalizeLiveMessage(message: OrderChatMessageDto): OrderChatMessageDto {
+  return {
+    ...message,
+    attachments: normalizeAttachments(
+      (message as OrderChatMessageDto & {
+        attachments?: Parameters<typeof normalizeAttachments>[0];
+      }).attachments,
+    ),
+  };
 }
 
 export function OrderChat({
@@ -101,8 +113,12 @@ export function OrderChat({
         unsubscribeMessage = chatHubService.onOrderMessage((message) => {
           if (message.orderId !== orderId) return;
 
+          const normalizedMessage = normalizeLiveMessage(message);
+
           setLiveMessages((prev) =>
-            prev.some((item) => item.id === message.id) ? prev : [...prev, message],
+            prev.some((item) => item.id === normalizedMessage.id)
+              ? prev
+              : [...prev, normalizedMessage],
           );
         });
 
@@ -130,11 +146,17 @@ export function OrderChat({
     [serverMessages, liveMessages],
   );
 
-  const handleSend = async (message: string) => {
-    if (!message.trim()) return;
+  const handleSend = async ({
+    message,
+    files,
+  }: {
+    message: string;
+    files: File[];
+  }) => {
+    if (!message.trim() && files.length === 0) return;
 
     try {
-      const createdMessage = await sendMessage({ orderId, message }).unwrap();
+      const createdMessage = await sendMessage({ orderId, message, files }).unwrap();
       setLiveMessages((prev) =>
         prev.some((item) => item.id === createdMessage.id)
           ? prev
@@ -198,6 +220,7 @@ export function OrderChat({
             onSend={handleSend}
             disabled={isSending}
             placeholder="Напишите сообщение по заказу..."
+            allowAttachments
           />
         </div>
       </Modal>

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
+import type { ChatAttachment } from "../lib/attachments";
 import { getRoleLabel } from "../lib/roles";
 import { Card } from "./Card";
+import { AttachmentList } from "./AttachmentList";
 
 type ChatMessage = {
   id: number;
@@ -9,6 +11,7 @@ type ChatMessage = {
   senderRole: string;
   message: string;
   createdAtUtc: string;
+  attachments?: ChatAttachment[];
 };
 
 type ChatMessageListProps<T extends ChatMessage> = {
@@ -88,9 +91,16 @@ export function ChatMessageList<T extends ChatMessage>({
               >
                 {message.senderName} · {getRoleLabel(message.senderRole)}
               </div>
-              <div className="mt-1 whitespace-pre-wrap text-sm leading-6">
-                {message.message}
-              </div>
+              {message.message.trim() ? (
+                <div className="mt-1 whitespace-pre-wrap text-sm leading-6">
+                  {message.message}
+                </div>
+              ) : null}
+              {message.attachments?.length ? (
+                <div className={message.message.trim() ? "mt-3" : "mt-2"}>
+                  <AttachmentList attachments={message.attachments} compact />
+                </div>
+              ) : null}
               <div
                 className={`mt-2 text-[11px] ${
                   isOwnMessage

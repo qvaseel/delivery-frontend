@@ -1,6 +1,7 @@
 import type { CustomerDto } from "../customers/types";
 import type { EmployeeDto, EmployeeRole } from "../employees/types";
 import type { ProductDto } from "../products/types";
+import type { ChatAttachment } from "../../shared/lib/attachments";
 
 export type OrderStatus = 1 | 2 | 3 | 4 | 5 | "all";
 
@@ -59,6 +60,7 @@ export type OrderChatMessageDto = {
   senderRole: string;
   message: string;
   createdAtUtc: string;
+  attachments?: ChatAttachment[];
 };
 
 export type CreateOrderDto = {

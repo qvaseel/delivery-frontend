@@ -1,4 +1,5 @@
 import type { CustomerDto } from "../customers/types";
+import type { ChatAttachment } from "../../shared/lib/attachments";
 
 export type HelpdeskTicketStatus = 1 | 2 | 3 | 4;
 
@@ -41,15 +42,18 @@ export type HelpdeskTicketMessageDto = {
   senderRole: string;
   message: string;
   createdAtUtc: string;
+  attachments?: ChatAttachment[];
 };
 
 export type CreateHelpdeskTicketDto = {
   subject: string;
-  message: string;
+  message?: string;
+  files?: File[];
 };
 
 export type SendHelpdeskMessageDto = {
-  message: string;
+  message?: string;
+  files?: File[];
 };
 
 export type HelpdeskTicketsQuery = {

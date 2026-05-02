@@ -1,4 +1,8 @@
 import { baseApi } from "../../app/baseApi";
+import {
+  buildMultipartFormData,
+  normalizeAttachments,
+} from "../../shared/lib/attachments";
 import type { PagedResult } from "../products/types";
 import {
   normalizeHelpdeskTicket,
@@ -33,17 +37,41 @@ function normalizeHelpdeskUnreadTickets(
   }));
 }
 
+function normalizeHelpdeskMessage<T extends HelpdeskTicketMessageDto>(
+  message: T,
+): T {
+  return {
+    ...message,
+    attachments: normalizeAttachments(
+      (message as T & { attachments?: Parameters<typeof normalizeAttachments>[0] }).attachments,
+    ),
+  };
+}
+
 export const helpdeskApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createHelpdeskTicket: builder.mutation<
       HelpdeskTicketDto,
       CreateHelpdeskTicketDto
     >({
-      query: (body) => ({
-        url: "/helpdesk/tickets",
-        method: "POST",
-        body,
-      }),
+      query: ({ subject, message, files = [] }) => {
+        const trimmedMessage = message?.trim() ?? "";
+
+        return {
+          url: "/helpdesk/tickets",
+          method: "POST",
+          body:
+            files.length > 0
+              ? buildMultipartFormData(
+                  {
+                    subject: subject.trim(),
+                    message: trimmedMessage || undefined,
+                  },
+                  files,
+                )
+              : { subject: subject.trim(), message: trimmedMessage },
+        };
+      },
       invalidatesTags: ["HelpdeskTickets", "HelpdeskUnread"],
       transformResponse: normalizeHelpdeskTicket,
     }),
@@ -109,19 +137,29 @@ export const helpdeskApi = baseApi.injectEndpoints({
         url: `/helpdesk/tickets/${id}/messages`,
         params: { take },
       }),
+      transformResponse: (response: HelpdeskTicketMessageDto[]) =>
+        response.map(normalizeHelpdeskMessage),
       providesTags: (_result, _error, { id }) => [
         { type: "HelpdeskMessages", id },
       ],
     }),
     sendHelpdeskMessage: builder.mutation<
       HelpdeskTicketMessageDto,
-      { id: number; message: string }
+      { id: number; message?: string; files?: File[] }
     >({
-      query: ({ id, message }) => ({
-        url: `/helpdesk/tickets/${id}/messages`,
-        method: "POST",
-        body: { message },
-      }),
+      query: ({ id, message, files = [] }) => {
+        const trimmedMessage = message?.trim() ?? "";
+
+        return {
+          url: `/helpdesk/tickets/${id}/messages`,
+          method: "POST",
+          body:
+            files.length > 0
+              ? buildMultipartFormData({ message: trimmedMessage || undefined }, files)
+              : { message: trimmedMessage },
+        };
+      },
+      transformResponse: normalizeHelpdeskMessage,
       invalidatesTags: (_result, _error, { id }) => [
         { type: "HelpdeskMessages", id },
         { type: "HelpdeskTickets", id },

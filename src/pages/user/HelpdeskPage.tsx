@@ -40,7 +40,11 @@ export function HelpdeskPage() {
     };
   }, [refetch]);
 
-  const handleCreate = async (values: { subject: string; message: string }) => {
+  const handleCreate = async (values: {
+    subject: string;
+    message: string;
+    files: File[];
+  }) => {
     try {
       const ticket = await createTicket(values).unwrap();
       toast.success(`Тикет #${ticket.id} создан`);

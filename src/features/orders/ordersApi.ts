@@ -1,4 +1,8 @@
 import { baseApi } from "../../app/baseApi";
+import {
+  buildMultipartFormData,
+  normalizeAttachments,
+} from "../../shared/lib/attachments";
 import type { PagedResult } from "../products/types";
 import type {
   CreateOrderDto,
@@ -30,6 +34,15 @@ function normalizeOrderChatUnreadList(
   }));
 }
 
+function normalizeOrderChatMessage<T extends OrderChatMessageDto>(message: T): T {
+  return {
+    ...message,
+    attachments: normalizeAttachments(
+      (message as T & { attachments?: Parameters<typeof normalizeAttachments>[0] }).attachments,
+    ),
+  };
+}
+
 export const ordersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     myOrders: builder.query<OrderDto[], void>({
@@ -58,6 +71,8 @@ export const ordersApi = baseApi.injectEndpoints({
         url: `/orders/${orderId}/chat/messages`,
         params: { take },
       }),
+      transformResponse: (response: OrderChatMessageDto[]) =>
+        response.map(normalizeOrderChatMessage),
       providesTags: (_result, _error, { orderId }) => [
         { type: "OrderChat", id: orderId },
       ],
@@ -79,13 +94,21 @@ export const ordersApi = baseApi.injectEndpoints({
     }),
     sendOrderChatMessage: builder.mutation<
       OrderChatMessageDto,
-      { orderId: number; message: string }
+      { orderId: number; message?: string; files?: File[] }
     >({
-      query: ({ orderId, message }) => ({
-        url: `/orders/${orderId}/chat/messages`,
-        method: "POST",
-        body: { message },
-      }),
+      query: ({ orderId, message, files = [] }) => {
+        const trimmedMessage = message?.trim() ?? "";
+
+        return {
+          url: `/orders/${orderId}/chat/messages`,
+          method: "POST",
+          body:
+            files.length > 0
+              ? buildMultipartFormData({ message: trimmedMessage || undefined }, files)
+              : { message: trimmedMessage },
+        };
+      },
+      transformResponse: normalizeOrderChatMessage,
       invalidatesTags: (_result, _error, { orderId }) => [
         { type: "OrderChat", id: orderId },
         "OrderChatUnread",
