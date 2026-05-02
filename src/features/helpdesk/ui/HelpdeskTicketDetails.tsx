@@ -25,10 +25,7 @@ import {
   getHelpdeskStatusLabel,
   HelpdeskTicketStatusEnum,
 } from "../lib/helpdesk.utils";
-import type {
-  HelpdeskTicketMessageDto,
-  HelpdeskTicketStatus,
-} from "../types";
+import type { HelpdeskTicketMessageDto, HelpdeskTicketStatus } from "../types";
 
 type HelpdeskTicketDetailsProps = {
   ticketId: number;
@@ -56,14 +53,18 @@ function normalizeLiveMessage(
   return {
     ...message,
     attachments: normalizeAttachments(
-      (message as HelpdeskTicketMessageDto & {
-        attachments?: Parameters<typeof normalizeAttachments>[0];
-      }).attachments,
+      (
+        message as HelpdeskTicketMessageDto & {
+          attachments?: Parameters<typeof normalizeAttachments>[0];
+        }
+      ).attachments,
     ),
   };
 }
 
-export function HelpdeskTicketDetails({ ticketId }: HelpdeskTicketDetailsProps) {
+export function HelpdeskTicketDetails({
+  ticketId,
+}: HelpdeskTicketDetailsProps) {
   const dispatch = useAppDispatch();
   const me = useAppSelector((state) => state.auth.me);
   const currentUserId = me?.userId ? Number(me.userId) : null;
@@ -71,7 +72,9 @@ export function HelpdeskTicketDetails({ ticketId }: HelpdeskTicketDetailsProps) 
   const canManage = roles.includes("Manager") || roles.includes("Admin");
   const hasMarkedReadRef = useRef(false);
 
-  const [liveMessages, setLiveMessages] = useState<HelpdeskTicketMessageDto[]>([]);
+  const [liveMessages, setLiveMessages] = useState<HelpdeskTicketMessageDto[]>(
+    [],
+  );
   const [selectedEmployee, setSelectedEmployee] = useState<SelectOption | null>(
     null,
   );
@@ -109,13 +112,20 @@ export function HelpdeskTicketDetails({ ticketId }: HelpdeskTicketDetailsProps) 
     hasMarkedReadRef.current = true;
 
     dispatch(
-      helpdeskApi.util.updateQueryData("helpdeskUnreadCount", undefined, (draft) => {
-        draft.unreadTickets = Math.max(
-          0,
-          draft.unreadTickets - (ticket.hasUnread ? 1 : 0),
-        );
-        draft.unreadMessages = Math.max(0, draft.unreadMessages - ticket.unreadCount);
-      }),
+      helpdeskApi.util.updateQueryData(
+        "helpdeskUnreadCount",
+        undefined,
+        (draft) => {
+          draft.unreadTickets = Math.max(
+            0,
+            draft.unreadTickets - (ticket.hasUnread ? 1 : 0),
+          );
+          draft.unreadMessages = Math.max(
+            0,
+            draft.unreadMessages - ticket.unreadCount,
+          );
+        },
+      ),
     );
     dispatch(
       helpdeskApi.util.updateQueryData(
@@ -200,7 +210,11 @@ export function HelpdeskTicketDetails({ ticketId }: HelpdeskTicketDetailsProps) 
     if (!message.trim() && files.length === 0) return;
 
     try {
-      const createdMessage = await sendMessage({ id: ticketId, message, files }).unwrap();
+      const createdMessage = await sendMessage({
+        id: ticketId,
+        message,
+        files,
+      }).unwrap();
       setLiveMessages((prev) =>
         prev.some((item) => item.id === createdMessage.id)
           ? prev
@@ -256,6 +270,8 @@ export function HelpdeskTicketDetails({ ticketId }: HelpdeskTicketDetailsProps) 
     );
   }
 
+  const hasEmployee = isAssigning || Boolean(ticket.assignedEmployee);
+
   return (
     <div className="space-y-5">
       <Card className="p-5">
@@ -276,7 +292,9 @@ export function HelpdeskTicketDetails({ ticketId }: HelpdeskTicketDetailsProps) 
             </div>
             <div className="mt-2 text-sm text-custom-text-muted">
               Тема:{" "}
-              <span className="font-medium text-custom-text">{ticket.subject}</span>
+              <span className="font-medium text-custom-text">
+                {ticket.subject}
+              </span>
             </div>
             <div className="mt-1 text-sm text-custom-text-muted">
               Клиент:{" "}
@@ -296,28 +314,32 @@ export function HelpdeskTicketDetails({ ticketId }: HelpdeskTicketDetailsProps) 
 
           {canManage ? (
             <div className="space-y-3 lg:w-[26rem]">
-              <div>
-                <div className="mb-1.5 text-sm font-medium text-custom-text-muted">
-                  Назначить сотрудника
+              {!hasEmployee && (
+                <div>
+                  <div className="mb-1.5 text-sm font-medium text-custom-text-muted">
+                    Назначить сотрудника
+                  </div>
+                  <EmployeeAsyncSelect
+                    value={selectedEmployee}
+                    onChange={handleAssign}
+                    isDisabled={isAssigning || Boolean(ticket.assignedEmployee)}
+                  />
                 </div>
-                <EmployeeAsyncSelect
-                  value={selectedEmployee}
-                  onChange={handleAssign}
-                  isDisabled={isAssigning}
-                />
-              </div>
+              )}
 
               <div>
                 <div className="mb-1.5 text-sm font-medium text-custom-text-muted">
                   Сменить статус
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {([
-                    HelpdeskTicketStatusEnum.Open,
-                    HelpdeskTicketStatusEnum.InProgress,
-                    HelpdeskTicketStatusEnum.Resolved,
-                    HelpdeskTicketStatusEnum.Closed,
-                  ] as const).map((status) => (
+                  {(
+                    [
+                      HelpdeskTicketStatusEnum.Open,
+                      HelpdeskTicketStatusEnum.InProgress,
+                      HelpdeskTicketStatusEnum.Resolved,
+                      HelpdeskTicketStatusEnum.Closed,
+                    ] as const
+                  ).map((status) => (
                     <Button
                       key={status}
                       variant={ticket.status === status ? "primary" : "ghost"}
