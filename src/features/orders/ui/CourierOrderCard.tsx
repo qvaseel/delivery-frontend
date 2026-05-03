@@ -5,6 +5,7 @@ import { canMarkDelivered, canStartDelivery } from "../lib/courierOrders.utils";
 import type { OrderDto } from "../types";
 import { CourierOrderItems } from "./CourierOrderItems";
 import { OrderChat } from "./OrderChat";
+import { OrderDeliveryInfo } from "./OrderDeliveryInfo";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 import { OrderRouteMap } from "../../../shared/ui/OrderRouteMap";
@@ -48,6 +49,7 @@ export function CourierOrderCard({
             </span>
           </div>
 
+          <OrderDeliveryInfo order={order} />
           <OrderRouteMap address={order.address} mode="courier" />
         </div>
 

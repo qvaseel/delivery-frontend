@@ -4,6 +4,7 @@ import { Card } from "../../../shared/ui/Card";
 import { canCancelOrder } from "../lib/orders.utils";
 import type { OrderDto } from "../types";
 import { OrderChat } from "./OrderChat";
+import { OrderDeliveryInfo } from "./OrderDeliveryInfo";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { MyOrderItems } from "./MyOrderItems";
 import { OrderStatusBadge } from "./OrderStatusBadge";
@@ -48,6 +49,7 @@ export function MyOrderCard({
             </span>
           </div>
 
+          <OrderDeliveryInfo order={order} />
           <OrderRouteMap address={order.address} />
         </div>
 

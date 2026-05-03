@@ -5,6 +5,7 @@ import { Card } from "../../../shared/ui/Card";
 import { canTransition } from "../status";
 import type { OrderDto, OrderStatus } from "../types";
 import { OrderStatusBadge } from "./OrderStatusBadge";
+import { OrderDeliveryInfo } from "./OrderDeliveryInfo";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { CourierAsyncSelect } from "../../employees/ui/CourierAsyncSelect";
 import type { SelectOption } from "../../../shared/lib/styles";
@@ -77,6 +78,8 @@ export function OrderCard({
               {formatPrice(order.totalPrice)}
             </span>
           </div>
+
+          <OrderDeliveryInfo order={order} />
         </div>
 
         <div className="flex flex-col gap-3 lg:min-w-[320px]">

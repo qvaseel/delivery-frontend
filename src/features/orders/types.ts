@@ -29,6 +29,9 @@ export type OrderDto = {
   imageUrl?: string | null | undefined;
   items: OrderItemDto[];
   createdAtUtc: string;
+  deliveryStartedAtUtc: string | null;
+  deliveredAtUtc: string | null;
+  deliveryDurationMinutes: number | null;
 };
 
 export type OrderStatusHistoryDto = {
