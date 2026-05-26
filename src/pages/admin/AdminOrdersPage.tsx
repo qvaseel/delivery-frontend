@@ -21,6 +21,7 @@ import type { SelectOption } from "../../shared/lib/styles";
 
 const initialFilters: OrdersFiltersState = {
   status: "all",
+  paymentMethod: "all",
   addressSearch: "",
   assignedEmployeeId: "",
   customerId: "",
@@ -55,6 +56,8 @@ export function AdminOrdersPage() {
 
     return {
       status: filters.status === "all" ? undefined : filters.status,
+      paymentMethod:
+        filters.paymentMethod === "all" ? undefined : filters.paymentMethod,
       addressSearch: debouncedAddress.trim() || undefined,
       customerId,
       assignedEmployeeId,

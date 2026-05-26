@@ -4,6 +4,8 @@ import type { ProductDto } from "../products/types";
 import type { ChatAttachment } from "../../shared/lib/attachments";
 
 export type OrderStatus = 1 | 2 | 3 | 4 | 5 | "all";
+export type PaymentMethod = 1 | 2 | 3;
+export type PaymentMethodFilter = PaymentMethod | "all";
 
 export const OrderStatusEnum = {
   Created: 1 as OrderStatus,
@@ -11,6 +13,12 @@ export const OrderStatusEnum = {
   Delivering: 3 as OrderStatus,
   Delivered: 4 as OrderStatus,
   Canceled: 5 as OrderStatus,
+} as const;
+
+export const PaymentMethodEnum = {
+  Cash: 1 as PaymentMethod,
+  Card: 2 as PaymentMethod,
+  Online: 3 as PaymentMethod,
 } as const;
 
 export type OrderItemDto = {
@@ -22,6 +30,7 @@ export type OrderItemDto = {
 export type OrderDto = {
   id: number;
   status: Exclude<OrderStatus, "all">;
+  paymentMethod: number;
   address: string;
   customer: CustomerDto;
   employee: EmployeeDto;
@@ -68,11 +77,13 @@ export type OrderChatMessageDto = {
 
 export type CreateOrderDto = {
   address: string;
+  paymentMethod: PaymentMethod;
   items: { productId: number; quantity: number }[];
 };
 
 export type OrderListQuery = {
   status?: 1 | 2 | 3 | 4 | 5;
+  paymentMethod?: PaymentMethod;
   customerId?: number;
   assignedEmployeeId?: number;
 
@@ -95,6 +106,7 @@ export type OrderListQuery = {
 
 export type OrdersFiltersState = {
   status: OrderStatus | "all";
+  paymentMethod: PaymentMethodFilter;
   addressSearch: string;
   assignedEmployeeId: string;
   customerId: string;

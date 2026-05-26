@@ -7,6 +7,7 @@ import { OrderChat } from "./OrderChat";
 import { OrderDeliveryInfo } from "./OrderDeliveryInfo";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { MyOrderItems } from "./MyOrderItems";
+import { OrderPaymentInfo } from "./OrderPaymentInfo";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 import { OrderRouteMap } from "../../../shared/ui/OrderRouteMap";
 
@@ -49,6 +50,7 @@ export function MyOrderCard({
             </span>
           </div>
 
+          <OrderPaymentInfo order={order} />
           <OrderDeliveryInfo order={order} />
           <OrderRouteMap address={order.address} />
         </div>

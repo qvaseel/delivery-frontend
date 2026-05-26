@@ -4,6 +4,7 @@ import { Input } from "../../../shared/ui/Input";
 import type { OrdersFiltersState } from "../types";
 import { CustomerAsyncSelect } from "../../customers/ui/CustomerAsyncSelect";
 import { OrderStatusSelect } from "./OrderStatusSelect";
+import { PaymentMethodSelect } from "./PaymentMethodSelect";
 import { EmployeeAsyncSelect } from "../../employees/ui/EmployeeAsyncSelect";
 import { type SelectOption } from "../../../shared/lib/styles";
 
@@ -44,7 +45,17 @@ export function OrdersFilters({
           />
         </div>
 
-        <div className="md:col-span-5">
+        <div className="md:col-span-3">
+          <div className="mb-1.5 text-sm font-medium text-custom-text-muted">
+            Оплата
+          </div>
+          <PaymentMethodSelect
+            value={filters.paymentMethod}
+            onChange={(value) => onChange("paymentMethod", value)}
+          />
+        </div>
+
+        <div className="md:col-span-3">
           <div className="mb-1.5 text-sm font-medium text-custom-text-muted">
             Клиент
           </div>
@@ -59,7 +70,7 @@ export function OrdersFilters({
           </div>
         </div>
 
-        <div className="md:col-span-4">
+        <div className="md:col-span-3">
           <div className="mb-1.5 text-sm font-medium text-custom-text-muted">
             Назначенный сотрудник
           </div>

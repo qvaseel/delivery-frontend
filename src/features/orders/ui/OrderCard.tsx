@@ -6,6 +6,7 @@ import { canTransition } from "../status";
 import type { OrderDto, OrderStatus } from "../types";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 import { OrderDeliveryInfo } from "./OrderDeliveryInfo";
+import { OrderPaymentInfo } from "./OrderPaymentInfo";
 import { OrderHistoryPanel } from "./OrderHistoryPanel";
 import { CourierAsyncSelect } from "../../employees/ui/CourierAsyncSelect";
 import type { SelectOption } from "../../../shared/lib/styles";
@@ -79,6 +80,7 @@ export function OrderCard({
             </span>
           </div>
 
+          <OrderPaymentInfo order={order} />
           <OrderDeliveryInfo order={order} />
         </div>
 

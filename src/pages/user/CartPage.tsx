@@ -6,12 +6,54 @@ import { Button } from "../../shared/ui/Button";
 import { useAppDispatch } from "../../app/hooks";
 import { cartActions } from "../../features/cart/cartSlice";
 import { useCreateOrderMutation } from "../../features/orders/ordersApi";
+import type { CreateOrderDto } from "../../features/orders/types";
 import { useCartDetails } from "../../features/cart/useCartDetails";
 import { CartItemsList } from "../../features/cart/ui/CartItemsList";
 import { CheckoutCard } from "../../features/cart/ui/CheckoutCard";
 import { EmptyState } from "../../shared/ui/EmptyState";
 
 const DADATA_TOKEN = "c495416bba6542f7540a2a0bf6d09ec82b81bc0a";
+
+const getCreateOrderErrorMessage = (error: unknown) => {
+  const fallback = "Не удалось оформить заказ";
+
+  if (!error || typeof error !== "object" || !("data" in error)) {
+    return fallback;
+  }
+
+  const data = (error as { data?: unknown }).data;
+
+  if (typeof data === "string") {
+    return data.toLowerCase().includes("paymentmethod")
+      ? "Выберите корректный способ оплаты"
+      : data || fallback;
+  }
+
+  if (!data || typeof data !== "object") {
+    return fallback;
+  }
+
+  const response = data as {
+    message?: unknown;
+    title?: unknown;
+    errors?: Record<string, string[] | string | undefined>;
+  };
+  const paymentMethodError =
+    response.errors?.paymentMethod ?? response.errors?.PaymentMethod;
+
+  if (Array.isArray(paymentMethodError) && paymentMethodError[0]) {
+    return paymentMethodError[0];
+  }
+
+  if (typeof paymentMethodError === "string") {
+    return paymentMethodError;
+  }
+
+  if (typeof response.message === "string") return response.message;
+  if (typeof response.title === "string") return response.title;
+
+  return fallback;
+};
 
 export function CartPage() {
   const navigate = useNavigate();
@@ -36,7 +78,10 @@ export function CartPage() {
         ? "В корзине есть позиции с количеством выше доступного остатка."
         : null;
 
-  const handleCreateOrder = async ({ address }: { address: string }) => {
+  const handleCreateOrder = async ({
+    address,
+    paymentMethod,
+  }: Pick<CreateOrderDto, "address" | "paymentMethod">) => {
     if (rows.length === 0) {
       toast.error("Корзина пустая");
       return;
@@ -52,6 +97,7 @@ export function CartPage() {
     try {
       const order = await createOrder({
         address,
+        paymentMethod,
         items: rows.map((row) => ({
           productId: row.product.id,
           quantity: row.cartItem.quantity,
@@ -61,8 +107,8 @@ export function CartPage() {
       dispatch(cartActions.clear());
       toast.success(`Заказ #${order.id} создан`);
       navigate("/orders");
-    } catch {
-      toast.error("Не удалось оформить заказ");
+    } catch (error) {
+      toast.error(getCreateOrderErrorMessage(error));
     }
   };
 

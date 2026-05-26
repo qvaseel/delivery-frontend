@@ -5,7 +5,8 @@ import {
   type DaDataSuggestion,
 } from "react-dadata";
 import "react-dadata/dist/react-dadata.css";
-import type { CreateOrderDto } from "../../orders/types";
+import type { CreateOrderDto, PaymentMethod } from "../../orders/types";
+import { paymentMethodOptions } from "../../orders/lib/orders.utils";
 import { Card } from "../../../shared/ui/Card";
 import { formatPrice } from "../../../shared/lib/format";
 import { Button } from "../../../shared/ui/Button";
@@ -14,6 +15,7 @@ import "../../../index.css";
 type CheckoutFormValues = {
   address: string;
   addressSuggestion?: DaDataSuggestion<DaDataAddress>;
+  paymentMethod: PaymentMethod | null;
 };
 
 type CheckoutCardProps = {
@@ -22,7 +24,7 @@ type CheckoutCardProps = {
   disabled: boolean;
   disabledReason?: string | null;
   isSubmitting?: boolean;
-  onSubmit: (data: CreateOrderDto) => Promise<void>;
+  onSubmit: (data: Pick<CreateOrderDto, "address" | "paymentMethod">) => Promise<void>;
   dadataToken: string;
 };
 
@@ -44,13 +46,14 @@ export function CheckoutCard({
     defaultValues: {
       address: "",
       addressSuggestion: undefined,
+      paymentMethod: null,
     },
   });
 
   const submit = async (values: CheckoutFormValues) => {
     await onSubmit({
       address: values.address,
-      items: [],
+      paymentMethod: values.paymentMethod as PaymentMethod,
     });
   };
 
@@ -113,6 +116,46 @@ export function CheckoutCard({
             </div>
           )}
         </label>
+
+        <Controller
+          control={control}
+          name="paymentMethod"
+          rules={{
+            validate: (value) => value !== null || "Выберите способ оплаты",
+          }}
+          render={({ field }) => (
+            <div>
+              <div className="mb-1.5 text-sm font-medium text-custom-text-muted">
+                Способ оплаты
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                {paymentMethodOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => field.onChange(option.value)}
+                    className={`rounded-2xl border px-3 py-2.5 text-sm font-medium transition-all ${
+                      field.value === option.value
+                        ? "border-custom-primary bg-custom-primary text-custom-primary-foreground"
+                        : errors.paymentMethod
+                          ? "border-custom-danger bg-custom-surface text-custom-text hover:bg-custom-surface-soft"
+                          : "border-custom-border bg-custom-surface text-custom-text hover:border-custom-border-strong hover:bg-custom-surface-soft"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {errors.paymentMethod?.message ? (
+                <div className="mt-1.5 text-xs font-medium text-custom-danger">
+                  {errors.paymentMethod.message}
+                </div>
+              ) : null}
+            </div>
+          )}
+        />
 
         <div className="rounded-2xl border border-custom-border bg-custom-surface-soft p-4 text-sm">
           <div className="flex items-center justify-between">

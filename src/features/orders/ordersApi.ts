@@ -147,6 +147,7 @@ export const ordersApi = baseApi.injectEndpoints({
         url: "/orders",
         params: {
           status: q.status ?? undefined,
+          paymentMethod: q.paymentMethod ?? undefined,
           customerId: q.customerId ?? undefined,
           assignedEmployeeId: q.assignedEmployeeId ?? undefined,
           createdFromUtc: q.createdFromUtc ?? undefined,
